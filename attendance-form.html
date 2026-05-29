@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出席登録</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #2a2a2a;
+    --accent: #00ff87;
+    --accent2: #00c8ff;
+    --text: #f0f0f0;
+    --muted: #666;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(0,255,135,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(0,200,255,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .card {
+    position: relative;
+    z-index: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px 32px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 0 60px rgba(0,255,135,0.05), 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,255,135,0.1);
+    border: 1px solid rgba(0,255,135,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.1em;
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+
+  .event-name { color: var(--accent); }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .field-label {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 20px;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,255,135,0.1);
+  }
+
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  .btn-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .btn {
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+  .btn-attend { background: var(--accent); color: #0a0a0a; }
+  .btn-attend:hover:not(:disabled) {
+    background: #00e87a;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,255,135,0.3);
+  }
+
+  .btn-absent {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-absent:hover:not(:disabled) {
+    border-color: #ff4466;
+    color: #ff4466;
+    transform: translateY(-2px);
+  }
+
+  .btn .icon { font-size: 22px; }
+  .btn .label { font-size: 13px; }
+
+  .sending-msg {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    display: none;
+  }
+
+  .error-msg {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    color: #ff4466;
+    display: none;
+    background: rgba(255,68,102,0.1);
+    border: 1px solid rgba(255,68,102,0.3);
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  /* 完了画面 */
+  .success {
+    display: none;
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  .success .big-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .success h2 {
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+
+  .success p {
+    font-size: 14px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .success .status-label {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .status-attend { background: rgba(0,255,135,0.15); color: var(--accent); border: 1px solid rgba(0,255,135,0.3); }
+  .status-absent { background: rgba(255,68,102,0.15); color: #ff4466; border: 1px solid rgba(255,68,102,0.3); }
+
+  .reset-btn {
+    margin-top: 24px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: all 0.2s;
+  }
+
+  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div id="formView">
+    <div class="badge">ATTENDANCE CHECK</div>
+    <h1>本日の<span class="event-name" id="eventNameDisplay">イベント</span>に<br>参加しますか？</h1>
+    <p class="subtitle" id="eventDate"></p>
+
+    <div class="field-label">お名前</div>
+    <input type="text" id="nameInput" placeholder="例：山田 太郎" autocomplete="name" />
+
+    <div class="field-label">ステータス</div>
+    <div class="btn-group">
+      <button class="btn btn-attend" id="btnAttend" onclick="submitAttendance('出席')">
+        <span class="icon">✅</span>
+        <span class="label">出席</span>
+      </button>
+      <button class="btn btn-absent" id="btnAbsent" onclick="submitAttendance('欠席')">
+        <span class="icon">❌</span>
+        <span class="label">欠席</span>
+      </button>
+    </div>
+
+    <div class="sending-msg" id="sendingMsg">⏳ 送信中...</div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="success" id="successView">
+    <div class="big-icon" id="successIcon"></div>
+    <h2 id="successTitle"></h2>
+    <p id="successMsg"></p>
+    <div class="status-label" id="statusLabel"></div>
+    <br>
+    <button class="reset-btn" onclick="resetForm()">別の方の登録</button>
+  </div>
+</div>
+
+<script>
+  // GAS エンドポイント
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwebQ5o2WM3vNA29FHM037KgR9Pz4MQYAk1tZvTgnpFSliMHsbbE_KpDdMBLI0T26_P/exec';
+
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+  var timeStr = now.toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('eventDate').textContent = dateStr;
+
+  var params = new URLSearchParams(window.location.search);
+  var eventName = params.get('event') || 'イベント';
+  document.getElementById('eventNameDisplay').textContent = eventName;
+  document.title = '出席登録 — ' + eventName;
+
+  function submitAttendance(status) {
+    var name = document.getElementById('nameInput').value.trim();
+    if (!name) {
+      var input = document.getElementById('nameInput');
+      input.focus();
+      input.style.borderColor = '#ff4466';
+      input.style.boxShadow = '0 0 0 3px rgba(255,68,102,0.1)';
+      setTimeout(function() {
+        input.style.borderColor = '';
+        input.style.boxShadow = '';
+      }, 1500);
+      return;
+    }
+
+    // ボタン無効化
+    document.getElementById('btnAttend').disabled = true;
+    document.getElementById('btnAbsent').disabled = true;
+    document.getElementById('sendingMsg').style.display = 'block';
+    document.getElementById('errorMsg').style.display = 'none';
+
+    var record = {
+      name: name,
+      status: status,
+      event: eventName,
+      date: dateStr,
+      time: timeStr
+    };
+
+    // GASへ送信（no-corsモードで送信、レスポンスは受け取れないが書き込みは成功する）
+    fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record)
+    })
+    .then(function() {
+      showSuccess(name, status);
+    })
+    .catch(function(err) {
+      document.getElementById('sendingMsg').style.display = 'none';
+      document.getElementById('btnAttend').disabled = false;
+      document.getElementById('btnAbsent').disabled = false;
+      var errDiv = document.getElementById('errorMsg');
+      errDiv.textContent = '⚠ 送信に失敗しました。通信環境を確認して再度お試しください。';
+      errDiv.style.display = 'block';
+    });
+  }
+
+  function showSuccess(name, status) {
+    document.getElementById('formView').style.display = 'none';
+    document.getElementById('successView').style.display = 'block';
+
+    if (status === '出席') {
+      document.getElementById('successIcon').textContent = '🎉';
+      document.getElementById('successTitle').textContent = name + 'さん、お待ちしています！';
+      document.getElementById('successMsg').textContent = '登録完了：' + timeStr;
+      document.getElementById('statusLabel').textContent = '✅ 出席';
+      document.getElementById('statusLabel').className = 'status-label status-attend';
+    } else {
+      document.getElementById('successIcon').textContent = '😔';
+      document.getElementById('successTitle').textContent = name + 'さん、残念です';
+      document.getElementById('successMsg').textContent = 'また次回ぜひ！ 登録：' + timeStr;
+      document.getElementById('statusLabel').textContent = '❌ 欠席';
+      document.getElementById('statusLabel').className = 'status-label status-absent';
+    }
+  }
+
+  function resetForm() {
+    document.getElementById('nameInput').value = '';
+    document.getElementById('btnAttend').disabled = false;
+    document.getElementById('btnAbsent').disabled = false;
+    document.getElementById('sendingMsg').style.display = 'none';
+    document.getElementById('errorMsg').style.display = 'none';
+    document.getElementById('formView').style.display = 'block';
+    document.getElementById('successView').style.display = 'none';
+  }
+</script>
+</body>
+</html>
